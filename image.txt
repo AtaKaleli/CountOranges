@@ -1,0 +1,99 @@
+clear all; clc;
+
+% Read the image Oranges.tif and convert to grayscale
+    I=imread("Oranges.tif");
+    I=rgb2gray(I);
+
+% Plot the histogram of an image I to see what should be threshold values
+  % imhist(f);
+
+% I Applied bi-level thresholding and create new image sb.
+% I used 240 as a threshold value because it is clearly seen that we can
+% divide the histogram into two region by choosing a pixel value as 240.
+    sb=I;
+    sb(sb<=240)=0;
+    sb(sb>240)=255;
+
+    BI=im2double(sb);%converting image to binary image
+    BIComplement=1-BI;%taking the complement of the binary image to be able to fill the holes
+    SegmentedImg=imfill(BIComplement,"holes");%filling the holes using imfill build-in func.
+    
+    se = strel('disk',1);%here, I Morphologically open image.
+    SegmentedImg = imopen(SegmentedImg,se);
+    
+    %Plot the results
+    figure; 
+    subplot(1,4,1); imshow(I);title('Original');
+    subplot(1,4,2); imshow(sb);title('Bi-level Thresholding');
+    
+    subplot(1,4,3); imshow(BIComplement);title('Complement of Thresholded Image');
+    subplot(1,4,4); imshow(SegmentedImg);title('Segmented Image');
+
+
+  
+
+% Find the number of connected components in the image I using
+% bwconncomp built-in function (C will be a structure)
+% When I found C, the number of total components will be stored in C 
+% as "numComponents" 
+% My plan to count the half oranges is  as follows:
+% 1) Use connected-component Extraction to eliminate the smaller half cuts.
+% The remaining half cuts of my image is only the bigger ones after that
+% operation
+% 2) Find the smaller half cut oranges but subtracting bigger half oranges
+% from total, which is "numComponents". So thats it.
+
+    C =  bwconncomp(SegmentedImg);
+    
+% Get the value of connected components
+    numComponents = size(C.PixelIdxList,2);
+
+% Get the number of pixels in each connected component  
+    numPixels = cellfun(@numel,C.PixelIdxList);
+
+% Get the biggest and smallest number of pixels of the connected components
+%In "oranges.tif", the largest value of bigger half cut oranges are same,
+%but in other test pictures,the biggest value of bigger half cut oranges
+%are not same, so I take the average of the biggest and smallest value, and
+%do my erase calculations based on this average value. This is because I
+%know that small half cut oranges are 100% percent smaller than this
+%average pixel value.
+
+    biggest = max(numPixels);
+    smallest=min(numPixels);
+    average=(biggest+smallest)/2;
+
+    
+    tempDeleteSmallerHalfCut=SegmentedImg;
+    tempDeleteBiggerHalfCut=SegmentedImg;
+% 
+% % Erase anything less than the average component in the image
+% % (i.e. set all the pixels to 0)
+%     for j=1: numComponents
+%          if (numPixels(j)<average )
+%               SegmentedImg(C.PixelIdxList{j})=0;
+%          end
+%     end
+    for j=1: numComponents
+         if (numPixels(j)<average )
+              SegmentedImg(C.PixelIdxList{j})=0;
+         end
+    end
+
+
+ %finding the bigger half cut oranges   
+ [labeledImage, numberOfCircles] = bwlabel(SegmentedImg);
+ 
+ %finding the smaller half cut oranges
+ halfComp=numComponents-numberOfCircles;
+
+biggerHalfCuts=num2str(numberOfCircles);
+smallerHalfCuts=num2str(halfComp);
+
+figure;
+ %subplot(1,3,1);
+ imshow(SegmentedImg);title("big oranges are :" + numberOfCircles )
+% subplot(1,3,2);text(numberOfCircles);
+% subplot(1,3,3);text(halfComp);
+
+

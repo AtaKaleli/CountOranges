@@ -1,0 +1,68 @@
+% Find the number of connected components in the image I using
+% bwconncomp built-in function (C will be a structure)
+% When I found C, the number of total components will be stored in C 
+% as "numComponents" 
+% My plan to count the half oranges is  as follows:
+% 1) Use connected-component Extraction to eliminate the smaller half cuts first.
+% The remaining half cuts of my image is only the bigger ones after that
+% operation. After that, I will use exacly same method to eliminate the
+% bigger half cuts.
+
+
+    C =  bwconncomp(SegmentedImg);
+    
+% Get the value of connected components
+    numComponents = size(C.PixelIdxList,2);
+
+% Get the number of pixels in each connected component  
+    numPixels = cellfun(@numel,C.PixelIdxList);
+
+% Get the biggest and smallest number of pixels of the connected components
+%In "oranges.tif", the largest value of bigger half cut oranges are same,
+%but in other test pictures,the biggest value of bigger half cut oranges
+%are not same, so I take the average of the biggest and smallest value, and
+%do my erase calculations based on this average value. This is because I
+%know that small half cut oranges are 100% percent smaller than this
+%average pixel value.
+
+    biggestPixel = max(numPixels);
+    smallestPixel=min(numPixels);
+    average=(biggestPixel+smallestPixel)/2;
+
+    %I created two temporary Image. One of them is to remove the smaller
+    %half cut oranges, and the other one is to remove the bigger half cut
+    %oranges.
+    tempDeleteSmallerHalfCut=SegmentedImg;
+    tempDeleteBiggerHalfCut=SegmentedImg;
+
+    %this for loop deletes(set the pixel value as 0) the smaller half cut
+    %oranges.
+    for j=1: numComponents
+         if (numPixels(j)<average )
+              tempDeleteSmallerHalfCut(C.PixelIdxList{j})=0;
+         end
+    end
+
+ %finding the bigger half cut oranges using bwlabel built-in func 
+ [labeledImage1, numberOfBiggerCircles] = bwlabel(tempDeleteSmallerHalfCut);
+
+
+    %this for loop deletes(set the pixel value as 0) the bigger half cut
+    %oranges.
+    for j=1: numComponents
+         if (numPixels(j)>average )
+              tempDeleteBiggerHalfCut(C.PixelIdxList{j})=0;
+         end
+    end
+ 
+% Find the  number of smaller half cut oranges using bwlabel built-in func
+ [labeledImage2, numberOfSmallerCircles] = bwlabel(tempDeleteBiggerHalfCut);
+
+
+
+
+figure;
+subplot(1,3,1);imshow(SegmentedImg);title('segmented Image');
+subplot(1,3,2);imshow(tempDeleteSmallerHalfCut);title("big half-cut oranges:" + numberOfBiggerCircles );
+subplot(1,3,3);imshow(tempDeleteBiggerHalfCut);title("small half-cut oranges:" + numberOfSmallerCircles );
+

@@ -1,0 +1,31 @@
+clear all; clc;
+
+% Read the image and convert to grayscale
+    I=imread("test3.png");
+    %store original image for displaying it in the first subplot
+    originalImage=I;
+    I=rgb2gray(I);
+
+% Plot the histogram of an image I to see what should be threshold values
+  % imhist(f);
+
+% I Applied bi-level thresholding and create new image sb.
+% I used 240 as a threshold value because it is clearly seen that we can
+% divide the histogram into two region by choosing a pixel value as 240.
+    sb=I;
+    sb(sb<=240)=0;
+    sb(sb>240)=255;
+
+    BI=im2double(sb);%converting image to binary image
+    BIComplement=1-BI;%taking the complement of the binary image to be able to fill the holes
+    SegmentedImg=imfill(BIComplement,"holes");%filling the holes using imfill build-in func.
+    
+    se = strel('disk',1);%here, I Morphologically open image.
+    SegmentedImg = imopen(SegmentedImg,se);
+    
+    %Plot the results
+    figure; 
+    subplot(1,4,1); imshow(originalImage);title('Step1- Original');
+    subplot(1,4,2); imshow(sb);title('Step2- Bi-level Thresholding');
+    subplot(1,4,3); imshow(BIComplement);title('Step3- Complement of Thresholded Image');
+    subplot(1,4,4); imshow(SegmentedImg);title('Step4- Filled(Segmented) Image');

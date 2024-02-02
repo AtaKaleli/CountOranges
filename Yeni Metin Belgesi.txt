@@ -1,0 +1,55 @@
+clear all; clc;
+
+% Read the image Oranges.tif and convert to grayscale
+    f = rgb2gray(imread("Oranges.tif"));
+
+% Plot the histogram of an image f to see what should be threshold values
+  % imhist(f);
+
+% I Applied bi-level thresholding and create new image sb.
+% I used 240 as a threshold value because it is clearly seen that we can
+% divide the histogram into two region by choosing a pixel value as 240.
+    sb=f;
+    sb(sb<=240)=0;
+    sb(sb>240)=255;
+
+    BI=im2double(sb);%converting image to binary image
+    BIComplement=1-BI;%taking the complement of the binary image to be able to fill the holes
+    F=imfill(BIComplement,"holes");%filling the holes using imfill build-in func.
+    
+% Plot the results
+%     figure; 
+%     subplot(1,4,1); imshow(f);title('Original');
+%     subplot(1,4,2); imshow(sb);title('Bi-level Thresholding');
+%     
+%     subplot(1,4,3); imshow(BIComplement);title('Complement of Thresholded Image');
+%     subplot(1,4,4); imshow(F);title('Segmented Image');
+
+%  [labeledImage, numberOfCircles] = bwlabel(F);
+  
+
+% Find the number of connected components in the image I using
+% bwconncomp built-in function (C will be a structure)
+    C =  bwconncomp(F);
+    
+% Get the value of connected components
+    numComponents = size(C.PixelIdxList,2);
+
+% Get the number of pixels in each connected component  
+    numPixels = cellfun(@numel,C.PixelIdxList);
+
+% Get the largest number of pixels of the connected components   
+    [biggest,indx] = max(numPixels);
+
+% Erase anything less than the largest component in the image
+% (i.e. set all the pixels to 0)
+    for j=1: numComponents
+         if (numPixels(j)<biggest )
+              F(C.PixelIdxList{j})=0;
+         end
+    end
+[labeledImage, numberOfCircles] = bwlabel(F);
+figure;
+imshow(F);
+
+
